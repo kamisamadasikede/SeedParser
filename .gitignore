@@ -1,0 +1,252 @@
+# ================================
+# 🌟 SeedParser 项目 .gitignore
+# 包含前端 & 后端完整过滤规则
+# ================================
+
+# ================================
+# 📦 前端相关 (Vue/Vite/TypeScript)
+# ================================
+# 依赖包和缓存
+frontend/node_modules/
+frontend/.npm
+frontend/.yarn
+frontend/.pnpm-store
+
+# 构建输出
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+frontend/.vite/
+frontend/.next/
+frontend/.nuxt/
+frontend.output/
+
+# 本地环境配置
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/*.local
+
+# 包管理锁定文件
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/pnpm-lock.yaml
+frontend/.package-lock.json
+
+# 测试相关
+frontend/coverage/
+frontend/.nyc_output/
+frontend/jest.config.js.bak
+frontend/tests/e2e/videos/
+frontend/tests/e2e/screenshots/
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+
+# ================================
+# ⚙️ 后端相关 (Go/Wails)
+# ================================
+# 编译输出 - 整个 build 目录
+build/**
+
+# 编译缓存
+*.test
+*.out
+*.exe
+ SeedParser.exe
+
+# Go 模块依赖（保留 go.mod，排除 go.sum）
+# go.mod (保留)
+go.sum
+
+# ================================
+# 🏗️ 构建和打包
+# ================================
+# 安装器相关
+installer/
+
+SeedParser-Setup-*.exe
+SeedParser-Setup-NSIS-*.exe
+种子解析器.exe
+
+# 构建脚本输出
+build.zip
+build_script.bat
+create_installer.bat
+一键生成安装器.bat
+fix_powershell.bat
+install_installer_tools.bat
+
+# ================================
+# 🗂️ 项目特定文件夹
+# ================================
+# 媒体和下载文件
+downloads/
+transcode/
+thumbnails/
+uploads/
+media/
+
+# 临时和缓存目录
+temp/
+tmp/
+cache/
+logs/
+data/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+.torrent.db
+
+# 进度和配置文件
+*_progress.json
+*.progress
+download_progress.json
+transcode_progress.json
+
+# ================================
+# 🔧 工具和依赖
+# ================================
+# FFmpeg 工具链
+
+# 但保留 tools/torrent.exe 用于项目
+
+# ================================
+# 📱 IDE 和编辑器
+# ================================
+# VS Code (全局)
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ================================
+# 🎯 操作系统相关
+# ================================
+# Windows
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+$RECYCLE.BIN/
+
+# Linux
+*.so
+*.so.*
+*.a
+*.lib
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ================================
+# 🔐 安全和证书
+# ================================
+# 密钥和证书
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+certificates/
+
+# ================================
+# 📄 文档和临时文件
+# ================================
+# 生成的文档
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+
+# 项目说明文件（可选）
+📝*.md
+❌*.txt
+安装说明.txt
+快速开始.txt
+PowerShell问题解决方案.txt
+
+# ================================
+# 🚀 部署相关
+# ================================
+# Docker
+Dockerfile.dev
+docker-compose.override.yml
+.dockerignore
+
+# 云部署
+.vercel
+.netlify
+
+# ================================
+# 📊 分析和监控
+# ================================
+# 分析数据
+.analytics/
+analytics/
+
+# 监控日志
+monitoring/
+metrics/
+
+# ================================
+# 🔄 版本控制相关
+# ================================
+# Git 钩子
+.hooks/
+
+# 其他 VCS
+.svn/
+.hg/
+.bzr/
+
+# ================================
+# 📝 其他临时文件
+# ================================
+# 各种临时文件
+*.tmp
+*.bak
+*.old
+*~
+
+# 压缩文件（临时）
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar.bz2

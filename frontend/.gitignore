@@ -42,7 +42,7 @@ pnpm-lock.yaml
 # ================================
 # 编译输出
 SeedParser.exe
-build/
+build/**
 bin/
 *.exe
 *.exe~
