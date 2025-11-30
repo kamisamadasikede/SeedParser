@@ -18,10 +18,11 @@
     "star-me": "Github"
   },
   "aboutpage": {
-    "title": "Wails Template Vue",
-    "project-repository": "Project Repository",
+    "title": "SeedParser Torrent Parser",
+    "gitee-repository": "Gitee Repository",
+    "github-repository": "GitHub Repository",
     "author": "Author",
-    "misitebao": "Misitebao",
+    "dev-team": "SeedParser Dev Team",
     "wails-repository": "Wails Repository",
     "thanks": "Thank you all for your support🙏!"
   },

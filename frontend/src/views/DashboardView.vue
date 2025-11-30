@@ -1178,7 +1178,7 @@ onMounted(() => {
             }"
           >这是一个开源视频下载与管理工具，由热爱技术的开发者精心打造。项目采用 Wails 框架（Go 后端 + Vue 前端）开发，支持种子解析、视频转码、库管理等功能。</p>
           <div class="flex space-x-4">
-            <a href="https://github.com" target="_blank" 
+            <a href="https://github.com/kamisamadasikede/SeedParser" target="_blank" 
               class="text-info hover:text-blue-400 flex items-center"
               :class="{
                 'text-info hover:text-blue-400': currentTheme === 'dark',
@@ -1187,7 +1187,7 @@ onMounted(() => {
             >
               <i class="fa fa-github mr-1"></i> GitHub
             </a>
-            <a href="https://gitee.com" target="_blank" 
+            <a href="https://gitee.com/bmcbdt/SeedParser" target="_blank" 
               class="text-info hover:text-blue-400 flex items-center"
               :class="{
                 'text-info hover:text-blue-400': currentTheme === 'dark',
@@ -1196,7 +1196,7 @@ onMounted(() => {
             >
               <i class="fa fa-gitlab mr-1"></i> Gitee
             </a>
-            <a href="mailto:example@example.com" 
+            <a href="mailto:3223694732@qq.com" 
               class="text-info hover:text-blue-400 flex items-center"
               :class="{
                 'text-info hover:text-blue-400': currentTheme === 'dark',
@@ -1206,6 +1206,64 @@ onMounted(() => {
               <i class="fa fa-envelope mr-1"></i> 联系我
             </a>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 支持作者模块 -->
+    <div 
+      class="rounded-lg p-6 shadow-lg transition-all duration-300"
+      :class="{
+        'bg-gradient-to-br from-orange-500 to-pink-500': currentTheme === 'dark',
+        'bg-gradient-to-br from-orange-400 to-pink-400': currentTheme === 'light'
+      }"
+    >
+      <div class="text-center text-white">
+        <div class="mb-4">
+          <i class="fa fa-coffee text-4xl mb-2"></i>
+          <h3 class="text-2xl font-bold mb-2">如果好用请作者河北奶茶喝 ☕</h3>
+          <p class="text-lg opacity-90">您的支持是作者继续开发的最大动力！</p>
+        </div>
+        
+        <div class="flex flex-col md:flex-row items-center justify-center gap-8 mt-6">
+          <!-- 支付宝收款码区域 -->
+          <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
+            <div class="w-32 h-32 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
+              <!-- 这里可以放支付宝收款码图片 -->
+              <i class="fa fa-qrcode text-4xl text-white/80"></i>
+            </div>
+            <p class="text-sm font-medium mb-2">支付宝扫码打赏</p>
+            <p class="text-xs opacity-75">请作者喝杯奶茶吧</p>
+          </div>
+          
+          <!-- 感谢文字 -->
+          <div class="text-left">
+            <h4 class="text-lg font-semibold mb-3">感谢您的支持 🙏</h4>
+            <ul class="space-y-2 text-sm opacity-90">
+              <li class="flex items-center">
+                <i class="fa fa-heart text-red-300 mr-2"></i>
+                您的支持将用于服务器维护
+              </li>
+              <li class="flex items-center">
+                <i class="fa fa-heart text-red-300 mr-2"></i>
+                帮助开发更多实用功能
+              </li>
+              <li class="flex items-center">
+                <i class="fa fa-heart text-red-300 mr-2"></i>
+                提升软件稳定性和性能
+              </li>
+              <li class="flex items-center">
+                <i class="fa fa-heart text-red-300 mr-2"></i>
+                持续优化用户体验
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-white/20">
+          <p class="text-sm opacity-75">
+            💝 每一份支持都是对开源精神的认可，让我们一起打造更好的工具！
+          </p>
         </div>
       </div>
     </div>

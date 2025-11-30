@@ -18,10 +18,11 @@
     "star-me": "Github"
   },
   "aboutpage": {
-    "title": "Wails Template Vue",
-    "project-repository": "项目仓库",
+    "title": "SeedParser 种子解析器",
+    "gitee-repository": "Gitee 仓库",
+    "github-repository": "GitHub 仓库",
     "author": "作者",
-    "misitebao": "米司特包",
+    "dev-team": "SeedParser 开发团队",
     "wails-repository": "Wails 仓库",
     "thanks": "感谢各位大佬的支持🙏！"
   },
