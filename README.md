@@ -116,6 +116,9 @@ SeedParser/
 ### 快速开始
 
 #### 方法一：使用预构建安装器
+![下载发行版](images/7.png)
+*从发行版页面下载 Windows 构建版本*
+
 1. 下载 `SeedParser-Setup-v1.0.exe`
 2. 运行安装器，按照向导完成安装
 3. 启动 SeedParser 应用程序
