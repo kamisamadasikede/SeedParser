@@ -1,0 +1,225 @@
+# ================================
+# 🌟 完整版 .gitignore 文件
+# SeedParser 项目 - 前端 & 后端通用
+# ================================
+
+# ================================
+# 📦 前端相关
+# ================================
+# 依赖包
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 构建输出
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+.next/
+.nuxt/
+.output/
+
+# 本地环境
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# 包管理
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ================================
+# ⚙️ 后端相关 (Go)
+# ================================
+# 编译输出
+SeedParser.exe
+build/
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go 模块
+go.sum
+go.mod
+
+# 编译缓存
+*.test
+*.out
+
+# ================================
+# 🗂️ 项目特定文件夹
+# ================================
+# 媒体文件
+downloads/
+uploads/
+media/
+assets/
+thumbnails/
+
+# 临时文件
+transcode/
+temp/
+tmp/
+cache/
+
+# 数据文件
+*.db
+*.sqlite
+*.sqlite3
+data/
+logs/
+
+# 进度文件
+*_progress.json
+*.progress
+
+# ================================
+# 🏗️ 构建相关
+# ================================
+# 构建脚本输出
+installer/
+goujian/
+
+# 工具链
+tools/ffmpeg/
+tools/torrent.exe
+
+# ================================
+# 📱 IDE & 编辑器
+# ================================
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ================================
+# 🎯 操作系统
+# ================================
+# Windows
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Linux
+*.so
+*.so.*
+*.a
+*.lib
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ================================
+# 🔐 安全相关
+# ================================
+# 密钥和证书
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+certificates/
+
+# ================================
+# 🧪 测试相关
+# ================================
+# 测试文件
+/cypress/videos/
+/cypress/screenshots/
+/tests/e2e/videos/
+/tests/e2e/screenshots/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# Jest
+jest.config.js.bak
+
+# ================================
+# 📄 文档临时文件
+# ================================
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+
+# ================================
+# 🚀 部署相关
+# ================================
+# Docker
+Dockerfile.dev
+docker-compose.override.yml
+.dockerignore
+
+# 云部署
+.vercel
+.netlify
+
+# ================================
+# 📊 分析和监控
+# ================================
+# 分析数据
+.analytics/
+analytics/
+
+# 监控日志
+monitoring/
+metrics/
+
+# ================================
+# 🔄 版本控制相关
+# ================================
+# Git 钩子
+.hooks/
+
+# 其他 VCS
+.svn/
+.hg/
+.bzr/
