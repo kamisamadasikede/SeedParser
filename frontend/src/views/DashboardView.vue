@@ -208,6 +208,30 @@ const getVideoLibraryInfo = async () => {
 const currentTheme = inject('currentTheme') as Ref<string>;
 const updateTheme = inject('updateTheme') as (theme: string) => void;
 
+// Image error handling with fallback
+const imageUrls = [
+  'https://gitee.com/bmcbdt/SeedParser/raw/master/images/zfb.jpg'
+];
+
+let currentImageIndex = 0;
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  
+  // Try next image URL
+  currentImageIndex++;
+  if (currentImageIndex < imageUrls.length) {
+    img.src = imageUrls[currentImageIndex];
+  } else {
+    // All images failed, show placeholder
+    img.style.display = 'none';
+    const parent = img.parentElement;
+    if (parent) {
+      parent.innerHTML = '<i class="fa fa-qrcode text-4xl text-white/80"></i>';
+    }
+  }
+};
+
 // Lifecycle hooks
 onMounted(() => {
   getDownloadStatus();
@@ -1221,16 +1245,22 @@ onMounted(() => {
       <div class="text-center text-white">
         <div class="mb-4">
           <i class="fa fa-coffee text-4xl mb-2"></i>
-          <h3 class="text-2xl font-bold mb-2">如果好用请作者河北奶茶喝 ☕</h3>
+          <h3 class="text-2xl font-bold mb-2">如果好用请作者一杯奶茶喝 ☕</h3>
           <p class="text-lg opacity-90">您的支持是作者继续开发的最大动力！</p>
         </div>
         
         <div class="flex flex-col md:flex-row items-center justify-center gap-8 mt-6">
           <!-- 支付宝收款码区域 -->
           <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center">
-            <div class="w-32 h-32 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto">
-              <!-- 这里可以放支付宝收款码图片 -->
-              <i class="fa fa-qrcode text-4xl text-white/80"></i>
+            <div class="w-32 h-48 bg-white/20 rounded-lg flex items-center justify-center mb-3 mx-auto overflow-hidden">
+              <!-- 支付宝收款码图片 -->
+              <img 
+                src="https://github.com/kamisamadasikede/SeedParser/raw/master/images/zfb.jpg" 
+                alt="支付宝收款码" 
+                class="w-full h-full object-cover rounded-lg"
+                @error="handleImageError"
+                loading="lazy"
+              >
             </div>
             <p class="text-sm font-medium mb-2">支付宝扫码打赏</p>
             <p class="text-xs opacity-75">请作者喝杯奶茶吧</p>
