@@ -2,11 +2,13 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	// 导入wails相关包
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -87,10 +89,25 @@ func customMiddleware(next http.Handler) http.Handler {
 // copyToolsDir函数已移除，不再需要复制tools目录内容
 
 func main() {
-	// Create an instance of the app structure
 	// 创建一个App结构体实例
 	app := NewApp()
 	var err error
+
+	// 运行GPU检测测试
+	fmt.Println("===== GPU识别测试 =====")
+	// 由于我们正在测试CPU转码功能，暂时跳过GPU检测
+	fmt.Println("当前模式: CPU编码模式")
+
+	// 检查FFmpeg路径
+	ffmpegPath := ".\tools\ffmpeg\bin\ffmpeg.exe"
+	// 检查ffmpeg是否存在
+	if _, err := os.Stat(ffmpegPath); os.IsNotExist(err) {
+		// 如果指定路径不存在，尝试从系统PATH中查找
+		fmt.Println("指定的FFmpeg路径不存在，尝试从系统PATH中查找...")
+		ffmpegPath = "ffmpeg" // 尝试使用系统PATH中的ffmpeg
+	}
+	fmt.Printf("使用FFmpeg路径: %s\n", ffmpegPath)
+	fmt.Println("===== GPU识别测试完成 =====")
 
 	// 确保downloads目录存在
 	if _, err := os.Stat("./downloads"); os.IsNotExist(err) {

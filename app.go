@@ -42,8 +42,18 @@ type TranscodeTask struct {
 	Bitrate       string    `json:"bitrate"`
 }
 
-// HasGPU 检测系统是否有可用的GPU
-func HasGPU() bool {
+// GPUType 表示GPU的类型
+type GPUType string
+
+const (
+	GPUTypeNVIDIA GPUType = "nvidia"
+	GPUTypeAMD    GPUType = "amd"
+	GPUTypeIntel  GPUType = "intel"
+	GPUTypeOther  GPUType = "other"
+)
+
+// HasGPU 检测系统是否有可用的GPU，并返回GPU类型
+func HasGPU() (bool, GPUType) {
 	// 在Windows系统上，使用wmic命令检测GPU
 	cmd := exec.Command("wmic", "path", "win32_VideoController", "get", "Name")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -53,7 +63,7 @@ func HasGPU() bool {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("检测GPU失败: %v\n", err)
-		return false
+		return false, GPUTypeOther
 	}
 
 	// 将输出转换为字符串并检查是否包含GPU信息
@@ -64,12 +74,24 @@ func HasGPU() bool {
 
 	// 如果有多行输出（标题行+至少一个GPU），则认为系统有GPU
 	if len(lines) > 1 {
-		fmt.Printf("检测到GPU: %s\n", strings.Join(lines[1:], ", "))
-		return true
+		gpuNames := lines[1:]
+		fmt.Printf("检测到GPU: %s\n", strings.Join(gpuNames, ", "))
+
+		// 检查GPU类型 - 增强AMD检测逻辑以更好地支持RX6400
+		outputLower := strings.ToLower(outputStr)
+		if strings.Contains(outputLower, "nvidia") {
+			return true, GPUTypeNVIDIA
+		} else if strings.Contains(outputLower, "amd") || strings.Contains(outputLower, "radeon") || strings.Contains(outputLower, "ati") ||
+			strings.Contains(outputLower, "amd radeon") || strings.Contains(outputLower, "rx") {
+			return true, GPUTypeAMD
+		} else if strings.Contains(outputLower, "intel") || strings.Contains(outputLower, "hd graphics") || strings.Contains(outputLower, "uhd graphics") || strings.Contains(outputLower, "iris") {
+			return true, GPUTypeIntel
+		}
+		return true, GPUTypeOther
 	}
 
 	fmt.Println("未检测到可用GPU")
-	return false
+	return false, GPUTypeOther
 }
 
 // CheckFFmpegGPU 检查ffmpeg是否支持GPU加速
@@ -87,13 +109,24 @@ func CheckFFmpegGPU(ffmpegPath string) bool {
 	}
 
 	outputStr := string(output)
+	outputLower := strings.ToLower(outputStr)
 	// 检查输出中是否包含常见的GPU加速关键字
-	gpuKeywords := []string{"cuda", "nvenc", "dxva2", "d3d11va", "qsv", "vulkan"}
+	gpuKeywords := []string{"cuda", "nvenc", "dxva2", "d3d11va", "qsv", "vulkan", "amf", "vce", "opencl"}
 	for _, keyword := range gpuKeywords {
-		if strings.Contains(strings.ToLower(outputStr), keyword) {
+		if strings.Contains(outputLower, keyword) {
 			fmt.Printf("ffmpeg支持GPU加速: %s\n", keyword)
 			return true
 		}
+	}
+
+	// 额外检查AMD VCE编码器支持
+	encodersCmd := exec.Command(ffmpegPath, "-encoders")
+	encodersCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	encodersOutput, _ := encodersCmd.CombinedOutput()
+	encodersLower := strings.ToLower(string(encodersOutput))
+	if strings.Contains(encodersLower, "h264_amf") || strings.Contains(encodersLower, "hevc_amf") {
+		fmt.Println("ffmpeg支持AMD AMF编码器")
+		return true
 	}
 
 	fmt.Println("ffmpeg不支持GPU加速")
@@ -1046,11 +1079,26 @@ func (a *App) startTranscode(taskID string, progressFile string) error {
 	}
 
 	// 检测系统是否有GPU以及ffmpeg是否支持GPU加速
-	hasGPU := HasGPU()
+	hasGPU, gpuType := HasGPU()
 	ffmpegSupportsGPU := CheckFFmpegGPU(ffmpegPath)
 	useGPU := hasGPU && ffmpegSupportsGPU
 
-	fmt.Printf("GPU转码状态: 系统有GPU=%v, ffmpeg支持GPU=%v, 是否使用GPU=%v\n", hasGPU, ffmpegSupportsGPU, useGPU)
+	fmt.Printf("GPU转码状态: 系统有GPU=%v, GPU类型=%v, ffmpeg支持GPU=%v, 是否使用GPU=%v\n", hasGPU, gpuType, ffmpegSupportsGPU, useGPU)
+
+	// 启用GPU加速支持，不再强制使用CPU编码
+	fmt.Println("启用GPU加速支持")
+
+	// 确保在CPU模式下使用CPU编码器
+	if !useGPU {
+		// 重置为CPU编码器
+		switch outputExt {
+		case "webm":
+			videoCodec = "libvpx-vp9"
+		default:
+			videoCodec = "libx264"
+		}
+		fmt.Printf("CPU模式下使用编码器: %s\n", videoCodec)
+	}
 
 	// 根据是否使用GPU设置不同的编码器和参数
 	var hwaccelType string
@@ -1060,62 +1108,138 @@ func (a *App) startTranscode(taskID string, progressFile string) error {
 		fmt.Println("使用GPU进行转码加速")
 
 		// 检测GPU类型并设置合适的硬件加速参数
-		// 先检查NVIDIA CUDA支持
-		cudaCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "cuda", "-i", task.InputFile, "-f", "null", "-")
-		cudaCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		_, cudaErr := cudaCheckCmd.CombinedOutput()
+		// 基于GPU类型进行优先级检测
+		switch gpuType {
+		case GPUTypeNVIDIA:
+			// NVIDIA GPU - 检查CUDA支持
+			cudaCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "cuda", "-i", task.InputFile, "-f", "null", "-")
+			cudaCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			_, cudaErr := cudaCheckCmd.CombinedOutput()
 
-		// 检查Intel QSV支持
-		qsvCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "qsv", "-i", task.InputFile, "-f", "null", "-")
-		qsvCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		_, qsvErr := qsvCheckCmd.CombinedOutput()
+			if cudaErr == nil {
+				// NVIDIA GPU
+				fmt.Println("检测到NVIDIA GPU，使用CUDA加速")
+				hwaccelType = "cuda"
+				gpuPreset = "p4"
 
-		// 检查DirectX支持 (dxva2或d3d11va)
-		d3dCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "d3d11va", "-i", task.InputFile, "-f", "null", "-")
-		d3dCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-		_, d3dErr := d3dCheckCmd.CombinedOutput()
+				// 设置GPU编码器，优先使用nvenc
+				if outputExt == "mp4" || outputExt == "mkv" {
+					// 对于H.264输出使用h264_nvenc
+					if strings.ToLower(videoCodec) == "libx264" {
+						videoCodec = "h264_nvenc"
+					} else if strings.ToLower(videoCodec) == "libx265" {
+						// 对于H.265输出使用hevc_nvenc
+						videoCodec = "hevc_nvenc"
+					}
+				}
+			} else {
+				// 尝试使用DirectX作为备选
+				d3dCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "d3d11va", "-i", task.InputFile, "-f", "null", "-")
+				d3dCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+				_, d3dErr := d3dCheckCmd.CombinedOutput()
 
-		// 设置GPU类型和编码参数
-		if cudaErr == nil {
-			// NVIDIA GPU
-			fmt.Println("检测到NVIDIA GPU，使用CUDA加速")
-			hwaccelType = "cuda"
-			gpuPreset = "p4"
-
-			// 设置GPU编码器，优先使用nvenc
-			if outputExt == "mp4" || outputExt == "mkv" {
-				// 对于H.264输出使用h264_nvenc
-				if strings.ToLower(videoCodec) == "libx264" {
-					videoCodec = "h264_nvenc"
-				} else if strings.ToLower(videoCodec) == "libx265" {
-					// 对于H.265输出使用hevc_nvenc
-					videoCodec = "hevc_nvenc"
+				if d3dErr == nil {
+					fmt.Println("NVIDIA GPU但CUDA不支持，使用DirectX加速")
+					hwaccelType = "d3d11va"
+				} else {
+					fmt.Println("NVIDIA GPU但不支持特定加速，使用优化的CPU编码")
+					useGPU = false
 				}
 			}
-		} else if qsvErr == nil {
-			// Intel GPU
-			fmt.Println("检测到Intel GPU，使用QSV加速")
-			hwaccelType = "qsv"
-			gpuPreset = "veryfast"
+		case GPUTypeAMD:
+			// AMD GPU - 增强AMF检测和优化，特别针对RX6400系列
+			amfCheckCmd := exec.Command(ffmpegPath, "-encoders")
+			amfCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			amfOutput, _ := amfCheckCmd.CombinedOutput()
+			amfOutputLower := strings.ToLower(string(amfOutput))
+			fmt.Println("AMD GPU编码器检测输出:", amfOutputLower)
 
-			if outputExt == "mp4" || outputExt == "mkv" {
-				// 对于H.264输出使用h264_qsv
-				if strings.ToLower(videoCodec) == "libx264" {
-					videoCodec = "h264_qsv"
-				} else if strings.ToLower(videoCodec) == "libx265" {
-					// 对于H.265输出使用hevc_qsv
-					videoCodec = "hevc_qsv"
+			// 检查是否支持AMD AMF编码器
+			hasH264AMF := strings.Contains(amfOutputLower, "h264_amf")
+			hasHEVCAMF := strings.Contains(amfOutputLower, "hevc_amf")
+			fmt.Printf("AMD GPU AMF编码器支持: H264=%v, HEVC=%v\n", hasH264AMF, hasHEVCAMF)
+
+			// 针对AMD RX6400优化的AMF配置
+			if hasH264AMF || hasHEVCAMF {
+				fmt.Println("检测到AMD GPU (可能是RX6400)，使用AMF加速")
+				hwaccelType = "d3d11va" // AMD使用d3d11va作为硬件解码
+				gpuPreset = "balanced"  // RX6400优化的预设
+
+				// 强制设置AMF编码器，不管输入的是什么编码器
+				if outputExt == "mp4" || outputExt == "mkv" {
+					// 优先使用H.264 AMF
+					if hasH264AMF {
+						videoCodec = "h264_amf"
+						fmt.Println("选择H.264 AMF编码器，适合AMD RX6400")
+					} else if hasHEVCAMF {
+						// 如果没有H.264 AMF再尝试HEVC AMF
+						videoCodec = "hevc_amf"
+						fmt.Println("选择HEVC AMF编码器，适合AMD RX6400")
+					}
+				}
+			} else {
+				// 尝试使用DirectX作为备选
+				d3dCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "d3d11va", "-i", task.InputFile, "-f", "null", "-")
+				d3dCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+				d3dOutput, d3dErr := d3dCheckCmd.CombinedOutput()
+				fmt.Println("DirectX加速检测输出:", string(d3dOutput))
+
+				if d3dErr == nil {
+					fmt.Println("AMD GPU但AMF不支持，使用DirectX加速")
+					hwaccelType = "d3d11va"
+				} else {
+					fmt.Println("AMD GPU但不支持特定加速，使用优化的CPU编码")
+					useGPU = false
 				}
 			}
-		} else if d3dErr == nil {
-			// 使用DirectX加速
-			fmt.Println("检测到DirectX支持，使用d3d11va加速")
-			hwaccelType = "d3d11va"
-			// 使用硬件解码但保持原编码器
-		} else {
-			// 虽然检测到GPU但不支持特定加速，回退到软件编码但使用更高线程
-			fmt.Println("GPU检测到但特定加速不支持，使用优化的CPU编码")
-			useGPU = false
+		case GPUTypeIntel:
+			// Intel GPU - 检查QSV支持
+			qsvCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "qsv", "-i", task.InputFile, "-f", "null", "-")
+			qsvCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			_, qsvErr := qsvCheckCmd.CombinedOutput()
+
+			if qsvErr == nil {
+				// Intel GPU
+				fmt.Println("检测到Intel GPU，使用QSV加速")
+				hwaccelType = "qsv"
+				gpuPreset = "veryfast"
+
+				if outputExt == "mp4" || outputExt == "mkv" {
+					// 对于H.264输出使用h264_qsv
+					if strings.ToLower(videoCodec) == "libx264" {
+						videoCodec = "h264_qsv"
+					} else if strings.ToLower(videoCodec) == "libx265" {
+						// 对于H.265输出使用hevc_qsv
+						videoCodec = "hevc_qsv"
+					}
+				}
+			} else {
+				// 尝试使用DirectX作为备选
+				d3dCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "d3d11va", "-i", task.InputFile, "-f", "null", "-")
+				d3dCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+				_, d3dErr := d3dCheckCmd.CombinedOutput()
+
+				if d3dErr == nil {
+					fmt.Println("Intel GPU但QSV不支持，使用DirectX加速")
+					hwaccelType = "d3d11va"
+				} else {
+					fmt.Println("Intel GPU但不支持特定加速，使用优化的CPU编码")
+					useGPU = false
+				}
+			}
+		default:
+			// 其他GPU类型 - 尝试DirectX加速
+			d3dCheckCmd := exec.Command(ffmpegPath, "-hwaccel", "d3d11va", "-i", task.InputFile, "-f", "null", "-")
+			d3dCheckCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			_, d3dErr := d3dCheckCmd.CombinedOutput()
+
+			if d3dErr == nil {
+				fmt.Println("未知GPU类型，使用DirectX加速")
+				hwaccelType = "d3d11va"
+			} else {
+				fmt.Println("未知GPU类型且不支持DirectX加速，使用优化的CPU编码")
+				useGPU = false
+			}
 		}
 	} else {
 		// CPU转码配置（原配置）
@@ -1137,17 +1261,51 @@ func (a *App) startTranscode(taskID string, progressFile string) error {
 	ffmpegArgs = append(ffmpegArgs, "-c:v", videoCodec)
 
 	// 4. 添加GPU或CPU编码参数
-	if useGPU && (hwaccelType == "cuda" || hwaccelType == "qsv") {
-		// GPU编码参数（在编码器之后）
-		if gpuPreset != "" {
-			ffmpegArgs = append(ffmpegArgs, "-preset", gpuPreset)
-			if hwaccelType == "cuda" {
-				// NVIDIA CUDA支持tune参数
-				ffmpegArgs = append(ffmpegArgs, "-tune", "hq")
+	if useGPU {
+		fmt.Printf("使用GPU编码，编码器: %s, GPU类型: %v\n", videoCodec, gpuType)
+
+		// 根据GPU类型和编码器添加对应的参数
+		switch {
+		case strings.Contains(videoCodec, "nvenc"):
+			// NVIDIA NVENC特有参数
+			if gpuPreset != "" {
+				ffmpegArgs = append(ffmpegArgs, "-preset", gpuPreset)
+			} else {
+				ffmpegArgs = append(ffmpegArgs, "-preset", "p4")
 			}
+			ffmpegArgs = append(ffmpegArgs, "-tune", "hq")
+		case strings.Contains(videoCodec, "amf"):
+			// AMD AMF特有参数，为RX6400优化
+			if !strings.Contains(strings.Join(ffmpegArgs, " "), "-quality") {
+				// 为RX6400选择优化的质量设置
+				ffmpegArgs = append(ffmpegArgs, "-quality", "balanced")
+			}
+			// 添加RX6400的性能优化参数
+			if !strings.Contains(strings.Join(ffmpegArgs, " "), "-rc") {
+				ffmpegArgs = append(ffmpegArgs, "-rc", "cbr_hq")
+				fmt.Println("为AMD RX6400添加优化参数: 使用高质量CBR编码")
+			}
+			// 为RX6400添加GOP设置
+			if !strings.Contains(strings.Join(ffmpegArgs, " "), "-g") {
+				ffmpegArgs = append(ffmpegArgs, "-g", "250")
+				fmt.Println("为AMD RX6400添加优化参数: GOP大小设为250")
+			}
+		case strings.Contains(videoCodec, "qsv"):
+			// Intel QSV特有参数
+			if gpuPreset != "" {
+				ffmpegArgs = append(ffmpegArgs, "-preset", gpuPreset)
+			} else {
+				ffmpegArgs = append(ffmpegArgs, "-preset", "veryfast")
+			}
+			ffmpegArgs = append(ffmpegArgs, "-look_ahead", "1")
+		default:
+			// 如果使用GPU但编码器不是GPU编码器，回退到CPU参数
+			fmt.Println("警告: 使用GPU但编码器不是GPU编码器，使用CPU参数")
+			ffmpegArgs = append(ffmpegArgs, "-preset", "medium", "-threads", "4")
 		}
-	} else if !useGPU {
+	} else {
 		// CPU编码参数
+		fmt.Println("使用CPU编码")
 		ffmpegArgs = append(ffmpegArgs, "-preset", "medium", "-threads", "4")
 	}
 
