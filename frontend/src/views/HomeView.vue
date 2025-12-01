@@ -9,7 +9,6 @@ const { t } = useI18n();
 <template>
   <div class="home">
     <!-- Logo -->
-    <img class="logo" alt="Vue logo" src="../assets/logo.png" />
     <HelloWorld :msg="t('homepage.welcome')" />
     <!-- Bottom button -->
     <div class="link">
